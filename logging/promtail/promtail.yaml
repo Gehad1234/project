@@ -1,0 +1,72 @@
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/promtail_positions.yaml
+
+clients:
+  - url: http://LOGGING_SERVER_IP:3100/loki/api/v1/push
+
+scrape_configs:
+
+  # ATM daemon Crow log
+  - job_name: atm_daemon
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job:        atm-daemon
+          machine_id: MACHINE_ID
+          location:   LOCATION
+          env:        production
+          __path__:   /opt/atm/logs/atm_daemon.log
+
+    pipeline_stages:
+      # Parse Crow format: (2026-05-04 04:17:39) [INFO ] message
+      - regex:
+          expression: '^\((?P<time>[^)]+)\)\s+\[(?P<level>\w+)\s*\]\s+(?P<message>.+)'
+      - labels:
+          level:
+      # Extract route from request lines
+      - regex:
+          source:     message
+          expression: 'Request:.*(?P<method>GET|POST|PUT|DELETE)\s+(?P<route>/\S+)'
+      - labels:
+          method:
+          route:
+      # Extract HTTP status code from response lines
+      - regex:
+          source:     message
+          expression: 'Response:.*\s(?P<http_status>\d{3})\s'
+      - labels:
+          http_status:
+      - timestamp:
+          source: time
+          format: "2006-01-02 15:04:05"
+
+  # ATM structured update result log (JSON)
+  - job_name: atm_update_results
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job:        atm-update-results
+          machine_id: MACHINE_ID
+          location:   LOCATION
+          env:        production
+          __path__:   /opt/atm/logs/update_results.log
+
+    pipeline_stages:
+      - json:
+          expressions:
+            status:    status
+            timestamp: timestamp
+            message:   message
+            success:   success
+      - labels:
+          status:
+      - timestamp:
+          source: timestamp
+          format: RFC3339

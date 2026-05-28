@@ -1,0 +1,9 @@
+#include "../include/CMS_server.h"
+#include "../include/CMS_Logger.h"
+
+int main() {
+    CMS_Logger::init("./cms/logs");
+    CMS_server server(9090);
+    server.run();
+    return 0;
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Fluent Bit for CUT-CMS-ATM
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Environment=APP_ENV=production
+ExecStart=/opt/fluent-bit/bin/fluent-bit -c /opt/cms/logging/fluent-bit/fluent-bit.conf
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
